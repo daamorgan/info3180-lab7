@@ -7,7 +7,7 @@ This file creates your application.
 
 import os 
 from app import app
-from flask import render_template, request, jsonify
+from flask import render_template, request, jsonify, flash
 from .forms import UploadForm
 from werkzeug.utils import secure_filename
 
@@ -31,19 +31,22 @@ def index(path):
     """
     return render_template('index.html')
 
-@app.route('/api/uploads', methods=["POST"])
+@app.route('/api/upload', methods=["POST", "GET"])
 def upload():
-    form=UploadForm
-    if form.validate_on_submit():
+    form=UploadForm()
+    if form.validate_on_submit() and request.method=="POST":
         description=form.description.data
         file=form.photo.data
         filename=secure_filename(file.filename)
-        file.save(os.path.joined(app.config["UPLOAD FOLDER"],filename))
-        upload=[{"messages": "File Upload Sucessful", "filename": filename, "description":description }]
-        return jsonify(response=upload)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        upload=[{"message": "File Upload Sucessful", "filename": filename, "description":description }]
+        state="success"
+        return jsonify(upload=upload), state
     else:
-        error=[{"errors":form_errors()}]
-        return jsonify(response=error)
+        error_messages=['{'+error+'}' for error in form_errors(form)]
+        error=[{"errors": form_errors(form)}]
+        state="failure"
+        return jsonify(error=error), state
 
 
 
